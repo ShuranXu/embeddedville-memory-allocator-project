@@ -1,0 +1,9 @@
+{
+  "name": "EmbeddedVille memory allocator",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "hostRequirements": {"cpus": 2, "memory": "4gb", "storage": "16gb"},
+  "features": {"ghcr.io/devcontainers/features/common-utils:2": {}},
+  "postCreateCommand": "sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gcc-13 make python3 qemu-system-x86 cpio busybox-static gnuplot-nox && ./project doctor",
+  "remoteUser": "vscode"
+}
+

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "courseId": "embedded-memory-allocator-project",
+  "activityId": "memory-allocator-capstone",
+  "contractVersion": "2026.10-embedded-memory-allocator-project-v1",
+  "kernel": {"version": "7.2.13", "commit": "3c172eede0d6b889ead876f45cc843070209208f"},
+  "baseline": {}, "linuxObservations": {}, "allocator": {}, "sourceDigest": ""
+}
+

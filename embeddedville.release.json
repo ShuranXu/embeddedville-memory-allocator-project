@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "project": {"id": "embeddedville-memory-allocator-project", "kind": "lab-environment", "courseIds": ["embedded-memory-allocator-project"]},
+  "repository": {"expectedRemote": "https://github.com/ShuranXu/embeddedville-memory-allocator-project.git", "defaultBranch": "main", "immutableReleaseTagsRequired": true},
+  "source": {"protectedPaths": ["include", "src", "tests", "tools", "linux", "traces", "evidence"], "baselineTag": "memory-allocator-project-v1.0.0"},
+  "validation": {"commands": ["./project doctor", "./project build", "./project baseline"]},
+  "deployment": {"managedBy": "embeddedville-learning-platform", "workflow": null, "productionRef": null}
+}
+

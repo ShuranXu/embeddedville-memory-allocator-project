@@ -1,0 +1,6 @@
+build/
+evidence/*.json
+evidence/*.zip
+linux/out/
+!evidence/allocator-report.template.json
+
