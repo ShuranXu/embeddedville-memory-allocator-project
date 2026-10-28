@@ -1,7 +1,10 @@
 build/
+__pycache__/
+*.pyc
 evidence/*.json
 evidence/*.zip
 evidence/*.txt
+evidence/*.csv
 linux/work/
 linux/*.o
 linux/*.ko

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, time, urllib.request, zipfile
+import argparse, csv, hashlib, json, os, pathlib, re, shutil, subprocess, sys, time, urllib.request, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 IDENTITY = json.loads((ROOT / ".embeddedville-workspace.json").read_text())
@@ -19,6 +19,57 @@ def make_target(target): run(["make", target])
 def baseline(_): make_target("baseline")
 def build(_): make_target("all")
 def test(_): make_target("test")
+
+def write_linux_views(evidence):
+    """Create deterministic, inspectable views from the raw guest evidence."""
+    trace = (evidence / "kmem-trace.txt").read_text(errors="replace").splitlines()
+    timeline = [line.strip() for line in trace if any(event in line for event in (
+        "kmalloc:", "kfree:", "mm_page_alloc:", "mm_page_free:",
+    ))]
+    (evidence / "kmem-timeline.txt").write_text("\n".join(timeline) + "\n")
+
+    requests = []
+    request_pattern = re.compile(r"kmalloc:.*bytes_req=(\d+).*bytes_alloc=(\d+)")
+    for line in timeline:
+        match = request_pattern.search(line)
+        if match and int(match.group(1)) in {24, 96, 512, 4096, 32768}:
+            requested, allocated = map(int, match.groups())
+            row = {"requestedBytes": requested, "allocatedBytes": allocated,
+                   "roundingBytes": allocated - requested}
+            if row not in requests:
+                requests.append(row)
+    requests.sort(key=lambda row: row["requestedBytes"])
+    with (evidence / "kmalloc-request-table.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=("requestedBytes", "allocatedBytes", "roundingBytes"))
+        writer.writeheader(); writer.writerows(requests)
+
+    buddy_rows = []
+    for line in (evidence / "buddyinfo.txt").read_text(errors="replace").splitlines():
+        match = re.match(r"Node\s+(\d+),\s+zone\s+(\S+)\s+(.+)", line)
+        if not match:
+            continue
+        node, zone, counts = match.groups()
+        for order, count in enumerate(int(value) for value in counts.split()):
+            buddy_rows.append({"node": node, "zone": zone, "order": order,
+                               "freeBlocks": count, "freePages": count * (1 << order)})
+    with (evidence / "buddy-orders.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=("node", "zone", "order", "freeBlocks", "freePages"))
+        writer.writeheader(); writer.writerows(buddy_rows)
+
+    sources = [evidence / name for name in (
+        "slabinfo.txt", "slabinfo-extended.txt", "buddyinfo.txt", "kmem-trace.txt",
+    )]
+    summary = {
+        "schemaVersion": 1,
+        "kernel": {"version": "7.2.13", "commit": "3c172eede0d6b889ead876f45cc843070209208f"},
+        "requestRows": requests,
+        "buddyRows": buddy_rows,
+        "timelineEvents": len(timeline),
+        "sourceDigests": {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sources},
+        "interpretationBoundary": "Public tracepoints show layer events, not every internal sheaf or PCP transition.",
+    }
+    (evidence / "linux-observation-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print("Generated request, timeline, buddy-order, and provenance views from raw guest evidence")
 
 def linux_observe(_):
     image = ROOT / "linux" / "out" / "bzImage"
@@ -42,6 +93,7 @@ def linux_observe(_):
         captured += 1
     if captured != 4:
         raise SystemExit(f"guest returned {captured}/4 evidence files")
+    write_linux_views(evidence)
     print(f"Captured {captured} Linux allocator evidence files in {evidence}")
 
 def digest_tree(paths):
