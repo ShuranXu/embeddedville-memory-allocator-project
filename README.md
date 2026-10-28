@@ -9,6 +9,7 @@ Start with:
 ```sh
 ./project doctor
 ./project baseline
+./project linux-observe
 ./project build
 ./project test
 ```
@@ -21,4 +22,6 @@ part of this public repository.
 Kernel observation is read-only and uses a GPL-2.0-only helper module. The
 course and QEMU helper scripts are pinned to Linux 7.2.13 commit
 `3c172eede0d6b889ead876f45cc843070209208f`.
+The released `linux/out` image boots without a network device and writes
+`slabinfo`, buddy-order, and tracefs evidence into `evidence/`.
 

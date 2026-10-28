@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+export PATH=/bin:/opt/ev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /sys/kernel/tracing /evidence
+/opt/ev/observe.sh
+echo "EmbeddedVille Linux allocator evidence captured."
+poweroff -f

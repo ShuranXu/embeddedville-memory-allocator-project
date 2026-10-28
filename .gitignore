@@ -1,6 +1,15 @@
 build/
 evidence/*.json
 evidence/*.zip
-linux/out/
+evidence/*.txt
+linux/work/
+linux/*.o
+linux/*.ko
+linux/*.mod
+linux/*.mod.c
+linux/.*.cmd
+linux/Module.symvers
+linux/modules.order
+linux/slabinfo
 !evidence/allocator-report.template.json
 

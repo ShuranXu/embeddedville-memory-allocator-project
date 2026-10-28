@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, hashlib, json, os, pathlib, shutil, subprocess, sys, time, urllib.request, zipfile
+import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, time, urllib.request, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 IDENTITY = json.loads((ROOT / ".embeddedville-workspace.json").read_text())
@@ -25,7 +25,24 @@ def linux_observe(_):
     initrd = ROOT / "linux" / "out" / "initramfs.cpio.gz"
     if not image.is_file() or not initrd.is_file():
         raise SystemExit("Pinned QEMU artifacts are absent. Rebuild the released Codespace or run linux/build-kernel.sh.")
-    run(["qemu-system-x86_64", "-nodefaults", "-nographic", "-no-reboot", "-m", "512M", "-kernel", str(image), "-initrd", str(initrd), "-append", "console=ttyS0 panic=-1"])
+    evidence = ROOT / "evidence"
+    evidence.mkdir(exist_ok=True)
+    result = subprocess.run([
+        "qemu-system-x86_64", "-nodefaults", "-nographic", "-no-reboot", "-serial", "mon:stdio",
+        "-net", "none", "-m", "512M",
+        "-kernel", str(image), "-initrd", str(initrd),
+        "-append", "console=ttyS0 panic=-1 random.trust_cpu=on",
+    ], cwd=ROOT, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    pattern = re.compile(r"EV_EVIDENCE_BEGIN:([^\r\n]+)\r?\n(.*?)EV_EVIDENCE_END:\1", re.DOTALL)
+    print(pattern.sub(lambda match: f"EV_EVIDENCE_CAPTURED:{match.group(1)} ({len(match.group(2).encode())} bytes)", result.stdout), end="")
+    captured = 0
+    for match in pattern.finditer(result.stdout):
+        name = pathlib.Path(match.group(1)).name
+        (evidence / name).write_text(match.group(2).replace("\r\n", "\n"))
+        captured += 1
+    if captured != 4:
+        raise SystemExit(f"guest returned {captured}/4 evidence files")
+    print(f"Captured {captured} Linux allocator evidence files in {evidence}")
 
 def digest_tree(paths):
     digest = hashlib.sha256()
