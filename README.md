@@ -35,6 +35,6 @@ command replaces only these generated observation files; it never changes
 If you already have a Codespace from `memory-allocator-project-v1.0.0`, commit
 or export your work before changing versions. Then merge or copy only the
 updated `tools/project.py` helper into your existing workspace, or create a
-fresh Codespace from `memory-allocator-project-v1.1.0` and bring your
+fresh Codespace from `memory-allocator-project-v1.1.1` and bring your
 learner-owned `src/allocator.c` and `evidence/allocator-report.json` forward.
 
